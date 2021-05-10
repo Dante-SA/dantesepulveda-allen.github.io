@@ -1,0 +1,25 @@
+---
+title: A Whole New World
+author: ''
+date: '2021-05-10'
+slug: a-whole-new-world
+categories: []
+tags: []
+description: ''
+---
+## Someone call the vet, cause these pythons are SICK
+
+I used to think that coding languages like Python were completely separate from the statistical stuff I did on R and RStudio. Then I took Computational Biology (SDS348) here at the University of Texas at Austin and I learned so much about R, RMarkdown, and even dabbled into Python (shout out to Dr. Woodward). Here I am going to show y'all how to use reticulate between R and Python. It essentially allows you to cross the bridge between the two languages resulting in cohesive code.
+```{r}
+#For example this is an R chunk
+library(reticulate)
+piece1 <- "Let's get this"
+```
+
+```{python}
+#And this is a python chunk
+piece2="party started"
+print(r.piece1,piece2)
+```
+
+Badabing, Badaboom. This is just some basics with reticulate, but I just wanted to flex on my past self that I knew how to acutally do this. There is a whole world of crazy things one can do through R and Python. With both now at my disposal, Thanos is trembling.
