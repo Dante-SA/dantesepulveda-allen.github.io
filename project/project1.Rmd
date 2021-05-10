@@ -1,0 +1,116 @@
+---
+title: "Aspects of Major"
+author: "Dante Sepuveda-Allen, das5549"
+date: "3/23/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, eval = TRUE, fig.align = "center", warning = F, message = F,
+tidy=TRUE, tidy.opts=list(width.cutoff=60), R.options=list(max.print=100))
+```
+
+## Introduction
+*For this project, I chose two datasets, the first being "college_recent_grads" which has data about recent college grads who just earned their Bachelors degrees such as, major, major category, median income, unemployment rate, the amount of men and women polled from each major, the total amount of people polled from each major, whether they are employed full or part-time, and what type of job they have. The second is "college_grad_students" which has data about recent graduate school graduates such as, major, major category, median income, unemployment rate, number of people polled for each major, whether they were employed, and if they were employed full-time or not.*
+*I acquired these datasets from fivethirtyeight.com and the article "The Economic Guide To Picking A College Major". Being a graduating senior, I was interested in the economic aspects of different majors and degree types. Going in, I wanted to see if commonly-held conceptions of major tyes held true and where the numbers strayed from those conceptions, and for the most part they held true, save for a few interesting discoveries.*
+
+
+```{r}
+library(fivethirtyeight)
+library(ggplot2)
+library(dplyr)
+library(tidyverse)
+library(cluster)
+```
+
+
+## Joining and Tidying
+```{r}
+CollegeData <- inner_join(college_recent_grads, college_grad_students)
+CollegeData %>% pivot_longer(c("college_jobs", "non_college_jobs", "low_wage_jobs"), names_to="Job.Type", values_to="Number.of.Individuals")
+```
+*The datasets "college_recent_grads" and "college_grad_students" had 173 observations each. An inner join was used because both datasets have a few variables in common so it was best and easiest to do an inner join because it would drop observations from either dataset that did not have a match in the other, and with full matches that allows me to compare data on a major in both undergraduate and graduate programs. This inner join resulted in the new joined dataset with 173 observations. Then I used the pivot_longer() function to tidy the data and take the three variables of "employed_parttime", "employed_fulltime", and "employed_fulltime_yearround" and put them under the new variable "Employment.Type. I then put their values under the new variable "Number.of.Individuals, this action of tidying increased the number of observations to 519. Then, I tidied the data by using the function pivot_longer(), to take the variables "college_jobs", "non_college_jobs", "low_wage_jobs" and put them under the new single variable "Job.Type" and took their values and moved them to the other new variable "Number.of.Individuals" which corresponds with "Job.Type*
+
+## Data Wrangling
+```{r}
+CollegeData <- CollegeData %>% mutate(pct.women.bach = (women/total*100)) %>% mutate(Pct.College.Jobs = (college_jobs/employed*100)) %>% mutate(Pct.NonCollege.Jobs = (non_college_jobs/employed*100)) %>% mutate(Pct.Low.Wage.Jobs = (low_wage_jobs/employed*100)) %>% mutate(Pct.Change.MedianIncome = ((grad_median-median)/median*100))
+
+CollegeData %>% filter(median>mean(median)) %>% slice(1:10)
+
+CollegeData %>% select(major_category, unemployment_rate) %>% group_by(major_category) %>% summarize(Med.Unemployment=median(unemployment_rate, na.rm=T)) %>% arrange(desc(Med.Unemployment))
+
+CollegeData %>% select(major_category, grad_unemployment_rate) %>% group_by(major_category) %>% summarize(Med.Grad.Unemployment=median(grad_unemployment_rate, na.rm=T)) %>% arrange(desc(Med.Grad.Unemployment))
+
+CollegeData%>% select(major_category, total, men, women, pct.women.bach) %>% group_by(major_category) %>% summarize(Mean.Pct.Women=mean(pct.women.bach)) %>% arrange(desc(Mean.Pct.Women))
+
+CollegeData %>% select(major_category, Pct.College.Jobs) %>% group_by(major_category) %>% summarize(Mean.Pct.College.Jobs=mean(Pct.College.Jobs)) %>% arrange(desc(Mean.Pct.College.Jobs))
+
+CollegeData %>% select(major_category, Pct.NonCollege.Jobs) %>% group_by(major_category) %>% summarize(Mean.Pct.NonCollege.Jobs=mean(Pct.NonCollege.Jobs)) %>% arrange(desc(Mean.Pct.NonCollege.Jobs))
+
+CollegeData %>% select(major_category, Pct.Low.Wage.Jobs) %>% group_by(major_category) %>% summarize(Mean.Pct.Low.Wage.Jobs=mean(Pct.Low.Wage.Jobs)) %>% arrange(desc(Mean.Pct.Low.Wage.Jobs))
+```
+  *Looking at the above data, I was interested in finding the top-10 jobs in terms of median income, the median unemployment rate of each major type (Bachelors), median unemployment of each major type (Masters), the mean percentage of women with degrees of those major types, and the mean percent of individuals with Bachelors degrees that now have a college, non-college, or low-income jobs.* 
+
+  *Furthermore, there is good and bad news: the good news is that the top-10 unemployment rates by major type for graduate students are almost half that of the top-10 unemployment rates by major type for those with just a Bachelors, the bad news is that in terms of unemployment rates, 8 of the top-10 major types remain in the top-10 for both Bachelors degrees and Masters degrees. Another statistic of note is that women make up over 50% of people with Bachelors degrees in 10 of the 16 major types, with 3 fields being comprised of over 75% women. Additionally, When looking at the mean percentages of each major type with jobs pertaining to their major, or "College Jobs", non-college jobs, and low-wage jobs, only 2 fields were in the top half of each job type, both "Health" and "Psychology and Social Work". This indicates that you are almost equally likely to end up in a job pertaining to your major as not, and their is an above average chance it is low-wage. Lastly, 8 of the top 10 major types in terms of median income are engineers.*
+
+## Overall Summary Data
+```{r}
+CollegeData %>% summarize(Num.of.Major.Categories = n_distinct(major_category), Num.of.Majors = n_distinct(major), Med.Bach.Unemployment=median(unemployment_rate), Med.Grad.Unemployment=median(grad_unemployment_rate), SD.Bach.Unemployment = sd(unemployment_rate), SD.Grad.Unemployment = sd(grad_unemployment_rate), MAD.Grad.Median.Income=mad(grad_median))
+```
+
+## Visualizing
+```{r}
+CollegeNum <- CollegeData %>% select_if(is.numeric) %>% select(unemployment_rate, grad_unemployment_rate, pct.women.bach, Pct.College.Jobs, Pct.NonCollege.Jobs, Pct.Low.Wage.Jobs, grad_employed_fulltime_yearround, median, grad_median, ) %>% cor(use="pair")
+CollegeCorr <- CollegeNum %>% as.data.frame %>% rownames_to_column("var1") %>%
+pivot_longer(-1,names_to="var2",values_to="correlation")
+
+CollegeCorr%>%ggplot(aes(var1,var2,fill=correlation))+
+geom_tile()+
+scale_fill_gradient2(low="blue",mid="white",high="green")+
+geom_text(aes(label=round(correlation,2)),color = "black", size = 3)+ 
+theme(axis.text.x = element_text(angle = 45, hjust=1)) 
+```
+*The above correlation heatmap displays data showing the correlations between different numeric variables in the joined CollegeData dataset. Some correlations of note are: the very weak correlation between the percentage of women with a bachelors in a major type and the percentage of each major type with jobs pertaining to their major, the relatively strong negative correlation between the percentage of women with a bachelors in a major type and the median income for those with a bachelors degree, and the very weak positive correlation between the unemployment rate of people with a bachelors degree and the median income.*
+
+
+```{r}
+CollegeData %>% ggplot(aes(x=major_category, y=median)) + xlab("Major Type") + ylab("Median Income")+ geom_boxplot() + 
+  geom_jitter(alpha=.5, aes(color=rank)) + theme(axis.text.x = element_text(angle = 45, hjust=1)) + ylim(20000,120000) + scale_color_gradient(low="blue", high="red") + ggtitle("Median Income of Each Major Type w/ a Bachelor's")
+```
+*Above is a boxplot graph showing the median incomes (y-axis) of each major type (x-axis) with each major serving as a datapoint and being colored by their rank in terms of median income. Looking at the graph the interesting trends to note are the very concentrated range of median incomes for education majors, communications and journalism majors, and interdisciplinary majors. Conversely, there are wide ranges of median incomes of Law & Public Policy Majors, Engineers, and Business Majors. Additionally, the major type with the highest median income are engineers and the major type with the lowest median income are psychology & social work majors.*
+
+
+```{r}
+CollegeData %>% ggplot(aes(major_category, Pct.Change.MedianIncome))+
+  geom_bar(aes(color="White", fill=major_category), stat='summary') + xlab("Major Type") + ylab("Percent Change in Median Income")+ coord_flip() +theme(legend.position="none") + ggtitle("How Much a Masters Increases Your Median Income (%)")
+```
+*Lastly, we have a bar graph showing the percent change in median income from a bachelors to a masters degree of the same major type. This bar graph essentially shows how much a masters degree benefits a person in terms of income and if it is worth getting it. As seen above, Biology & Life Science majors, Health majors, and Physical Science majors all stand to benefit the most, more than doubling their income when they earn a masters degree. Conversely, Interdisciplinary majors, Engineers, and Arts majors get only a slight boost in income between 50-75% greater.*
+
+## PAM
+```{r}
+CollegePam <- CollegeData %>% select(median, unemployment_rate, pct.women.bach)%>% scale %>% pam(3)
+
+PamData<-CollegeData%>%select(median, unemployment_rate, pct.women.bach)
+sil_width<-vector()
+for(i in 2:10){
+pam_fit <- pam(PamData, k = i)
+sil_width[i] <- pam_fit$silinfo$avg.width
+}
+ggplot()+geom_line(aes(x=1:10,y=sil_width))+scale_x_continuous(name="k",breaks=1:10)
+
+pam1 <- CollegeData %>% pam(k=3) 
+
+PamCluster<-CollegeData %>% mutate(cluster=as.factor(pam1$clustering))
+PamCluster %>% ggplot(aes(median, unemployment_rate, pct.women.bach,color=cluster)) + geom_point()
+
+PamCluster %>% group_by(cluster) %>% select(median, unemployment_rate, pct.women.bach) %>% summarize_if(is.numeric,mean,na.rm=T)
+
+CollegeData%>%slice(pam1$id.med)
+
+plot(pam1,which=2)
+
+```
+*Before we get into the PAM clusters and what they mean in regards to the dataset, we have to figure out the k value, or how many clusters to include. Graphing silhouette width vs k we see on the graph that 2 clusters is the best option, but to make the clusters more interesting without losing much in terms of quality a PAM sequence with 3 clusters was chosen. Next, the 3 PAM clusters were plotted. Overall, if you look at just the average silhouette width, it would be easy to just say that there is a strong structure amongst the clusters, but when looking at each cluster individually, you can tell that the average is very much skewed by cluster 1 which has 143 of 173 datapoints for a silhouette width of 0.81. Conversely, clusters 2 and 3 only have 23 and 7 datapoints respectively that each fall under weak structure and could be artificial. After analysis it must be concluded that there is not a good fit amongst the clusters due to this skew of silhouette width by cluster 1.*
+
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
