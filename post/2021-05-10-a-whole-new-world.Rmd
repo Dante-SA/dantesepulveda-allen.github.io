@@ -23,3 +23,5 @@ print(r.piece1,piece2)
 ```
 
 Badabing, Badaboom. This is just some basics with reticulate, but I just wanted to flex on my past self that I knew how to acutally do this. There is a whole world of crazy things one can do through R and Python. With both now at my disposal, Thanos is trembling.
+
+![](/post/2021-05-10-a-whole-new-world_files/scaredthanos.jpeg)
